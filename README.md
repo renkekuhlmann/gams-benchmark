@@ -1,3 +1,5 @@
+![](https://github.com/renkekuhlmann/gams-benchmark/workflows/Python/badge.svg)
+
 # GAMS Benchmark
 
 This is a small script for running [GAMS](https://www.gams.com/) optimization 
