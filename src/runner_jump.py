@@ -14,6 +14,7 @@ class RunnerJump(Runner):
     """
     Running a GAMS job through JuMP
     """
+    # pylint: disable=too-few-public-methods
 
     def __init__(self, sysdir, use_pyjulia=False):
         Runner.__init__(self)

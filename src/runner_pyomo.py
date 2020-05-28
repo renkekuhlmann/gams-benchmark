@@ -17,6 +17,7 @@ class RunnerPyomo(Runner):
     """
     Running a GAMS job through Pyomo
     """
+    # pylint: disable=too-few-public-methods
 
     def __init__(self):
         Runner.__init__(self)
