@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+""" Trace, TraceRecord """
 
 import os
 import re
@@ -30,22 +31,49 @@ TRACE_ENTRIES_REAL = [
 ]
 
 class Trace:
+    """
+    Database of Trace Records
+    """
 
     def __init__(self):
         self.records = []
 
 
     def append(self, trace_record):
+        """
+        Add trace record to database
+
+        Arguments
+        ---------
+        trace_record: TraceRecord
+            Trace Record to be added
+        """
         self.records.append(trace_record)
 
 
     def append_trc(self, trcfile):
+        """
+        Add trace entries located in a trace file to database
+
+        Arguments
+        ---------
+        trcfile: str
+            Path to trace file
+        """
         trc = TraceRecord()
         trc.load_trc(trcfile)
         self.append(trc)
 
 
     def write(self, trcfile):
+        """
+        Writes a trace file from database
+
+        Arguments
+        ---------
+        trcfile: str
+            Path to trace file
+        """
         if len(self.records) == 0:
             return
         self.records[0].write_header(trcfile)
@@ -54,7 +82,9 @@ class Trace:
 
 
 class TraceRecord:
-    # pylint: disable=too-many-instance-attributes
+    """
+    Trace Record stores solve attributes that are present in a GAMS trace file
+    """
 
     def __init__(self):
         self.record = dict()
@@ -63,6 +93,15 @@ class TraceRecord:
 
 
     def load_lst(self, lstfile):
+        """
+        Loads solve attributes from a listing file
+
+        Arguments
+        ---------
+        lstfile: str
+            Path to listing file
+        """
+
         if not os.path.exists(lstfile):
             return
 
@@ -101,7 +140,16 @@ class TraceRecord:
 
 
     def load_trc(self, trcfile):
-        # pylint: disable=too-many-branches, too-many-statements
+        """
+        Loads solve attributes from a trace file
+
+        Arguments
+        ---------
+        trcfile: str
+            Path to trace file
+        """
+        # pylint: disable=too-many-branches
+
         with open(trcfile, 'r') as fio:
             lines = fio.readlines()
 
@@ -170,6 +218,14 @@ class TraceRecord:
 
 
     def write_header(self, trcfile):
+        """
+        Writes trace file definition to trace file
+
+        Arguments
+        ---------
+        trcfile: str
+            Path to trace file
+        """
         with open(trcfile, 'w') as fio:
             fio.write("* Trace Record Definition\n")
             for i, key in enumerate(self.record):
@@ -181,6 +237,14 @@ class TraceRecord:
 
 
     def write_record(self, trcfile):
+        """
+        Writes the trace record to trace file
+
+        Arguments
+        ---------
+        trcfile: str
+            Path to trace file
+        """
         with open(trcfile, 'a') as fio:
             for i, (_, value) in enumerate(self.record.items()):
                 if i > 0:
@@ -192,5 +256,13 @@ class TraceRecord:
             fio.write("\n")
 
     def write(self, trcfile):
+        """
+        Writes trace file record to trace file incl. trace file definition
+
+        Arguments
+        ---------
+        trcfile: str
+            Path to trace file
+        """
         self.write_header(trcfile)
         self.write_record(trcfile)

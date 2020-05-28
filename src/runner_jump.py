@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+""" RunnerJump """
 
 import os
 import re
@@ -10,7 +11,9 @@ from src.runner_direct import RunnerDirect
 from src.trace import TraceRecord
 
 class RunnerJump(Runner):
-    # pylint: disable=too-few-public-methods
+    """
+    Running a GAMS job through JuMP
+    """
 
     def __init__(self, sysdir, use_pyjulia=False):
         Runner.__init__(self)
@@ -36,20 +39,22 @@ class RunnerJump(Runner):
 
     @staticmethod
     def _init_julia():
+        # pylint: disable=import-outside-toplevel
         print('Init Julia Environment. This can take some time...')
-        print('Julia...', end = '', flush=True)
+        print('Julia...', end='', flush=True)
         from julia import Julia
         Julia(compiled_modules=False)
         from julia import Main
-        print('ok! JuMP...', end = '', flush=True)
+        print('ok! JuMP...', end='', flush=True)
         Main.using('JuMP')
-        print('ok! GAMS...', end = '', flush=True)
+        print('ok! GAMS...', end='', flush=True)
         Main.using('GAMS')
         print('ok!')
 
 
     @staticmethod
     def _run_julia(jlprog):
+        # pylint: disable=import-outside-toplevel
         from julia import Main, JuliaError
         try:
             Main.eval(jlprog)
@@ -57,7 +62,7 @@ class RunnerJump(Runner):
             pass
 
 
-    def run(self, workdir, name, conf, time_limit=60, time_kill=30):
+    def _program(self, workdir, name, conf, time_limit):
         # gams options
         jlconf = ""
         for (key, value) in conf:
@@ -93,15 +98,43 @@ end
         prog = 'jump_' + name + '.jl'
         with open(os.path.join(workdir, prog), 'w') as fio:
             fio.write(jlprog)
+        return prog, jlprog
+
+
+    def run(self, workdir, name, conf, time_limit=60, time_kill=30):
+        """
+        Runs a GAMS job through JuMP
+
+        Arguments
+        ---------
+        workdir: string
+            Working directory for job
+        name: string
+            Name of job (job file without extension)
+        conf: list
+            GAMS options
+        time_limit: int
+            Time limit for GAMS job
+        time_kill: int
+            Additional time to time_limit till a process should be killed
+
+        Returns
+        -------
+        TraceRecord: job results
+        str: standard output of job
+        str: standard error of job
+        """
+        # pylint: disable=too-many-arguments,too-many-locals
 
         # solve
+        prog, jlprog = self._program(workdir, name, conf, time_limit)
         if self.use_pyjulia:
             process = Process(target=self._run_julia(jlprog))
             process.start()
             process.join(timeout=time_limit + time_kill)
             process.terminate()
-            stdout = "" # TODO
-            stderr = "" # TODO
+            stdout = ""
+            stderr = ""
         else:
             cmd = ['timeout', '%d' % (time_limit + time_kill), 'julia', os.path.join(workdir, prog)]
             process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

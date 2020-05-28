@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+""" RunnerDirect """
 
 import os
 import re
@@ -9,6 +10,9 @@ from src.runner import Runner
 from src.trace import TraceRecord
 
 class RunnerDirect(Runner):
+    """
+    Running a GAMS job using the command line
+    """
 
     def __init__(self, sysdir):
         Runner.__init__(self)
@@ -20,6 +24,14 @@ class RunnerDirect(Runner):
 
     @staticmethod
     def get_version(sysdir):
+        """
+        Returns GAMS version of GAMS located in sysdir
+
+        Arguments
+        ---------
+        sysdir : str
+            Path to GAMS system directory
+        """
         cmd = os.path.join(sysdir, 'gams')
         process = subprocess.Popen([cmd, 'audit', 'lo=3'], stdout=subprocess.PIPE)
         stdout = str(process.communicate())
@@ -27,6 +39,24 @@ class RunnerDirect(Runner):
 
 
     def command(self, workdir, name, conf, time_limit=60, time_kill=30):
+        """
+        GAMS command for given job
+
+        Arguments
+        ---------
+        workdir: string
+            Working directory for job
+        name: string
+            Name of job (job file without extension)
+        conf: list
+            GAMS options
+        time_limit: int
+            Time limit for GAMS job
+        time_kill: int
+            Additional time to time_limit till a process should be killed
+        """
+        # pylint: disable=too-many-arguments
+
         cmd = ['timeout', '%d' % (time_limit + time_kill),
                os.path.join(self.sysdir, 'gams'), os.path.join(workdir, name + '.gms'),
                'lo=2', 'al=0', 'ao=0', 'curdir=%s' % workdir, 'trace=trace.trc',
@@ -39,6 +69,30 @@ class RunnerDirect(Runner):
 
 
     def run(self, workdir, name, conf, time_limit=60, time_kill=30):
+        """
+        Runs a GAMS job using the command line
+
+        Arguments
+        ---------
+        workdir: string
+            Working directory for job
+        name: string
+            Name of job (job file without extension)
+        conf: list
+            GAMS options
+        time_limit: int
+            Time limit for GAMS job
+        time_kill: int
+            Additional time to time_limit till a process should be killed
+
+        Returns
+        -------
+        TraceRecord: job results
+        str: standard output of job
+        str: standard error of job
+        """
+        # pylint: disable=too-many-arguments
+
         cmd = self.command(workdir, name, conf, time_limit, time_kill)
 
         # solve

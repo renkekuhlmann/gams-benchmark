@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+""" RunnerPyomo """
 
 import os
 import shutil
@@ -13,11 +14,11 @@ from src.runner import Runner
 from src.trace import TraceRecord
 
 class RunnerPyomo(Runner):
-    # pylint: disable=too-few-public-methods
+    """
+    Running a GAMS job through Pyomo
+    """
 
     def __init__(self):
-        # pylint: disable=unused-import
-
         Runner.__init__(self)
         self.name = 'pyomo'
         self.modelfile_ext = 'py'
@@ -41,13 +42,18 @@ class RunnerPyomo(Runner):
         self.version_gams = "%s.%s.%s" % (version[0], version[1], version[2])
 
 
-    def run(self, workdir, name, conf, time_limit=60, time_kill=30):
+    def _program(self, workdir, name, conf, time_limit):
+        # pylint: disable=no-self-use
+
         # gams options
         pyconf = 'opt.options["add_options"] = []\n'
         for (key, value) in conf:
             if key == 'id':
                 continue
-            pyconf += 'opt.options["add_options"].append("option %s=%s;")\n' % (key, value)
+            if key.lower() == 'nodlim':
+                pyconf += 'opt.options["add_options"].append("GAMS_MODEL.%s=%s;")\n' % (key, value)
+            else:
+                pyconf += 'opt.options["add_options"].append("option %s=%s;")\n' % (key, value)
 
         # pyomo program
         pyprog = """
@@ -78,8 +84,36 @@ with open(os.path.join('%s', 'pyomo_result.pkl'), 'wb') as f:
         prog = 'pyomo_' + name + '.py'
         with open(os.path.join(workdir, prog), 'w') as fio:
             fio.write(pyprog)
+        return prog, pyprog
+
+
+    def run(self, workdir, name, conf, time_limit=60, time_kill=30):
+        """
+        Runs a GAMS job through Pyomo
+
+        Arguments
+        ---------
+        workdir: string
+            Working directory for job
+        name: string
+            Name of job (job file without extension)
+        conf: list
+            GAMS options
+        time_limit: int
+            Time limit for GAMS job
+        time_kill: int
+            Additional time to time_limit till a process should be killed
+
+        Returns
+        -------
+        TraceRecord: job results
+        str: standard output of job
+        str: standard error of job
+        """
+        # pylint: disable=too-many-arguments,too-many-locals
 
         # solve
+        prog, _ = self._program(workdir, name, conf, time_limit)
         cmd = ['timeout', '%d' % (time_limit + time_kill), 'python', os.path.join(workdir, prog)]
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
