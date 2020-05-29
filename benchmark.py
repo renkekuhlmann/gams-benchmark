@@ -14,7 +14,7 @@ import time
 import sys
 from shutil import copyfile
 
-from src.trace import Trace
+from src.trace import Trace, TraceRecord
 
 def _args():
     parser = argparse.ArgumentParser(description='Benchmark GAMS.')
@@ -132,9 +132,49 @@ def _job_process(thread_id, jobs, runner, model_path, args):
 
         overall_timing = time.time() - time_start
         if os.path.exists(workdir) or overall_timing > args.jobs_max_time:
-            print("[{:4d}|{:2d}|{:8.1f}] {:3s} {:20s} {:30s} {:2d} {:2d} {:8.3f}: {:s}".
-                  format(jobs.qsize()-1, thread_id, overall_timing, runner.modelfile_ext,
-                         conf_name[:20], filename, 0, 0, 0, '\033[94mskip\033[0m'))
+            trc = TraceRecord()
+            status_color = '\033[94m'
+            status = 'skip'
+            output = '{:4d} '.format(jobs.qsize()-1)
+            output += '{:2d} '.format(thread_id)
+            output += '{:2d} │ '.format(conf[0][1])
+            output += '{:35s} │ '.format(filename + '.' + runner.modelfile_ext)
+            if trc.record['SolverStatus'] is None:
+                output += '{:2s} '.format('')
+            else:
+                output += '{:2d} '.format(trc.record['SolverStatus'])
+            if trc.record['ModelStatus'] is None:
+                output += '{:2s} '.format('')
+            else:
+                output += '{:2d} '.format(trc.record['ModelStatus'])
+            output += '{:s}'.format(status_color)
+            output += '{:7s}'.format(status)
+            output += '{:s} │ '.format('\033[0m')
+            if trc.record['ObjectiveValueEstimate'] is None:
+                output += '{:10s} '.format('')
+            else:
+                output += '{: 9.3e} '.format(trc.record['ObjectiveValueEstimate'])
+            if trc.record['ObjectiveValue'] is None:
+                output += '{:10s} '.format('')
+            else:
+                output += '{: 9.3e} '.format(trc.record['ObjectiveValue'])
+            output += '{:s}'.format(status_color)
+            output += '{:4s}'.format(status)
+            output += '{:s} │ '.format('\033[0m')
+            output += '{:8s} '.format('')
+            if trc.record['ETInterface'] is None:
+                output += '{:8s} '.format('')
+            else:
+                output += '{:8.3f} '.format(trc.record['ETInterface'])
+            if trc.record['SolverTime'] is None:
+                output += '{:8s} '.format('')
+            else:
+                output += '{:8.3f} '.format(trc.record['SolverTime'])
+            output += '{:s}'.format(status_color)
+            output += '{:7s}'.format(status)
+            output += '{:s} │ '.format('\033[0m')
+            output += '{:8.1f} │'.format(overall_timing)
+            print(output)
             continue
 
         # init job
@@ -146,36 +186,94 @@ def _job_process(thread_id, jobs, runner, model_path, args):
         trc, stdout, stderr = runner.run(workdir, filename, conf, args.max_time,
                                          args.kill_time)
         time_used = time.time() - time_used
-        solvestat = trc.record['SolverStatus']
-        modelstat = trc.record['ModelStatus']
-        if solvestat is None:
-            solvestat = 0
-        if modelstat is None:
-            modelstat = 0
 
         # process status
         if stdout:
-            status = '\033[91mstdout \033[0m'
+            status_color = '\033[91m'
+            status = 'stdout'
         elif stderr:
-            status = '\033[91mstderr \033[0m'
-        elif solvestat == 6:
-            status = '\033[93mcapability \033[0m'
-        elif solvestat == 2:
-            status = '\033[93mmaxiter \033[0m'
-        elif solvestat == 3:
-            status = '\033[93mmaxtime \033[0m'
-        elif solvestat != 1:
-            status = '\033[91mfail \033[0m'
-        elif 11 <= modelstat <= 14:
-            status = '\033[91mfail \033[0m'
+            status_color = '\033[91m'
+            status = 'stderr'
+        elif trc.record['SolverStatus'] == 6:
+            status_color = '\033[93m'
+            status = 'capabil'
+        elif trc.record['SolverStatus'] == 2:
+            status_color = '\033[93m'
+            status = 'maxiter'
+        elif trc.record['SolverStatus'] == 3:
+            status_color = '\033[93m'
+            status = 'maxtime'
+        elif trc.record['SolverStatus'] != 1:
+            status_color = '\033[91m'
+            status = 'fail'
+        elif 11 <= trc.record['ModelStatus'] <= 14:
+            status_color = '\033[91m'
+            status = 'fail'
         else:
-            status = '\033[92mok \033[0m'
+            status_color = '\033[92m'
+            status = 'ok'
+
+        # process time
+        time_status_color = '\033[92m'
+        time_status = 'ok'
+        if trc.record['SolverTime'] is not None:
+            if trc.record['SolverTime'] > args.max_time and trc.record['SolverStatus'] != 3:
+                time_status_color = '\033[91m'
+                time_status = 'fail'
+            elif trc.record['SolverTime'] > args.max_time:
+                time_status_color = '\033[93m'
+                time_status = 'maxtime'
+            elif trc.record['SolverTime'] > args.max_time + args.kill_time:
+                time_status_color = '\033[91m'
+                time_status = 'maxtime'
+        elif trc.record['ETInterface'] is not None:
+            if trc.record['ETInterface'] > args.max_time + args.kill_time:
+                time_status_color = '\033[91m'
+                time_status = 'maxtime'
+
         overall_timing = time.time() - time_start
 
-        print("[{:4d}|{:2d}|{:8.1f}] {:3s} {:20s} {:30s} {:2d} {:2d} {:8.3f}: {:s}".
-              format(jobs.qsize()-1, thread_id, overall_timing, runner.modelfile_ext,
-                     conf_name[:20], filename, solvestat, modelstat, time_used,
-                     status))
+        # output
+        output = '{:4d} '.format(jobs.qsize()-1)
+        output += '{:2d} '.format(thread_id)
+        output += '{:2d} │ '.format(conf[0][1])
+        output += '{:35s} │ '.format(filename + '.' + runner.modelfile_ext)
+        if trc.record['SolverStatus'] is None:
+            output += '{:2s} '.format('')
+        else:
+            output += '{:2d} '.format(trc.record['SolverStatus'])
+        if trc.record['ModelStatus'] is None:
+            output += '{:2s} '.format('')
+        else:
+            output += '{:2d} '.format(trc.record['ModelStatus'])
+        output += '{:s}'.format(status_color)
+        output += '{:7s}'.format(status)
+        output += '{:s} │ '.format('\033[0m')
+        if trc.record['ObjectiveValueEstimate'] is None:
+            output += '{:10s} '.format('')
+        else:
+            output += '{: 9.3e} '.format(trc.record['ObjectiveValueEstimate'])
+        if trc.record['ObjectiveValue'] is None:
+            output += '{:10s} '.format('')
+        else:
+            output += '{: 9.3e} '.format(trc.record['ObjectiveValue'])
+        output += '{:s}'.format('\033[92m')
+        output += '{:4s}'.format('ok')
+        output += '{:s} │ '.format('\033[0m')
+        output += '{:8.3f} '.format(time_used)
+        if trc.record['ETInterface'] is None:
+            output += '{:8s} '.format('')
+        else:
+            output += '{:8.3f} '.format(trc.record['ETInterface'])
+        if trc.record['SolverTime'] is None:
+            output += '{:8s} '.format('')
+        else:
+            output += '{:8.3f} '.format(trc.record['SolverTime'])
+        output += '{:s}'.format(time_status_color)
+        output += '{:7s}'.format(time_status)
+        output += '{:s} │ '.format('\033[0m')
+        output += '{:8.1f} │'.format(overall_timing)
+        print(output)
 
 
 def _traces_merge(conf, args):
