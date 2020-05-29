@@ -117,7 +117,7 @@ def _jobs_start(jobs, runner, model_path, args):
 
 
 def _job_process(thread_id, jobs, runner, model_path, args):
-    # pylint: disable=too-many-locals,too-many-branches
+    # pylint: disable=too-many-locals,too-many-branches,too-many-statements
     while True:
         job = jobs.get()
         if job is None:
