@@ -12,6 +12,7 @@ import pyomo.version as pyover
 
 from src.runner import Runner
 from src.trace import TraceRecord
+from src.result import Result
 
 class RunnerPyomo(Runner):
     """
@@ -43,12 +44,12 @@ class RunnerPyomo(Runner):
         self.version_gams = "%s.%s.%s" % (version[0], version[1], version[2])
 
 
-    def _program(self, workdir, name, conf, time_limit):
+    def _program(self, job):
         # pylint: disable=no-self-use
 
         # gams options
         pyconf = 'opt.options["add_options"] = []\n'
-        for (key, value) in conf:
+        for (key, value) in job.configuration:
             if key == 'id':
                 continue
             if key.lower() == 'nodlim':
@@ -80,57 +81,43 @@ time_used = time.time() - time_used
 # store
 with open(os.path.join('%s', 'pyomo_result.pkl'), 'wb') as f:
     pickle.dump([results, time_used], f)
-        """ % (pyconf, time_limit, name, workdir)
+        """ % (pyconf, job.max_time, job.name, job.workdir)
 
-        prog = 'pyomo_' + name + '.py'
-        with open(os.path.join(workdir, prog), 'w') as fio:
+        prog = 'pyomo_' + job.name + '.py'
+        with open(os.path.join(job.workdir, prog), 'w') as fio:
             fio.write(pyprog)
         return prog, pyprog
 
 
-    def run(self, workdir, name, conf, time_limit=60, time_kill=30):
+    def run(self, job):
         """
-        Runs a GAMS job through Pyomo
+        Runs a GAMS job using the command line. Returns result.
 
         Arguments
         ---------
-        workdir: string
-            Working directory for job
-        name: string
-            Name of job (job file without extension)
-        conf: list
-            GAMS options
-        time_limit: int
-            Time limit for GAMS job
-        time_kill: int
-            Additional time to time_limit till a process should be killed
-
-        Returns
-        -------
-        TraceRecord: job results
-        str: standard output of job
-        str: standard error of job
+        job : Job
+            Benchmark job
         """
-        # pylint: disable=too-many-arguments,too-many-locals
 
         # solve
-        prog, _ = self._program(workdir, name, conf, time_limit)
-        cmd = ['timeout', '%d' % (time_limit + time_kill), 'python', os.path.join(workdir, prog)]
+        prog, _ = self._program(job)
+        progpath = os.path.join(job.workdir, prog)
+        cmd = ['timeout', '%d' % (job.max_time + job.kill_time), 'python', progpath]
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
         stdout = stdout.decode("utf-8")
         stderr = stderr.decode("utf-8")
 
         # store stdout / stderr
-        with open(os.path.join(workdir, 'stdout.txt'), 'w') as fio:
+        with open(os.path.join(job.workdir, 'stdout.txt'), 'w') as fio:
             fio.write(stdout)
-        with open(os.path.join(workdir, 'stderr.txt'), 'w') as fio:
+        with open(os.path.join(job.workdir, 'stderr.txt'), 'w') as fio:
             fio.write(stderr)
 
         # process solution
         trc = TraceRecord()
         try:
-            with open(os.path.join(workdir, 'pyomo_result.pkl'), 'rb') as fio:
+            with open(os.path.join(job.workdir, 'pyomo_result.pkl'), 'rb') as fio:
                 results, trc.record['ETInterface'] = pickle.load(fio)
 
             stats = results.problem
@@ -159,13 +146,13 @@ with open(os.path.join('%s', 'pyomo_result.pkl'), 'wb') as f:
             trc.record['SolverStatus'] = 13
             trc.record['ModelStatus'] = 12
 
-        trc.record['InputFileName'] = name + '.py'
+        trc.record['InputFileName'] = job.filename()
 
         # compute interface overhead
         if trc.record['SolverTime'] is not None and trc.record['ETInterface'] is not None:
             trc.record['ETInterfaceOverhead'] = trc.record['ETInterface'] - trc.record['SolverTime']
 
         # write trace file
-        trc.write(os.path.join(workdir, 'trace.trc'))
+        trc.write(os.path.join(job.workdir, 'trace.trc'))
 
-        return trc, stdout, stderr
+        return Result(trc, stdout, stderr)

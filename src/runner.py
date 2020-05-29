@@ -2,6 +2,7 @@
 """ Runner """
 
 from src.trace import TraceRecord
+from src.result import Result
 
 class Runner:
     """
@@ -15,49 +16,27 @@ class Runner:
         self.modelfile_ext = ''
 
 
-    def command(self, workdir, name, conf, time_limit=60, time_kill=30):
+    def command(self, job):
         """
-        GAMS command for given job
+        Runs a GAMS job using the command line
 
         Arguments
         ---------
-        workdir: string
-            Working directory for job
-        name: string
-            Name of job (job file without extension)
-        conf: list
-            GAMS options
-        time_limit: int
-            Time limit for GAMS job
-        time_kill: int
-            Additional time to time_limit till a process should be killed
+        job : Job
+            Benchmark job
         """
-        # pylint: disable=no-self-use,too-many-arguments,unused-argument
+        # pylint: disable=unused-argument,no-self-use
         return ['NOT AVAILABLE']
 
 
-    def run(self, workdir, name, conf, time_limit=60, time_kill=30):
+    def run(self, job):
         """
-        Runs a GAMS job
+        Runs a GAMS job using the command line. Returns result.
 
         Arguments
         ---------
-        workdir: string
-            Working directory for job
-        name: string
-            Name of job (job file without extension)
-        conf: list
-            GAMS options
-        time_limit: int
-            Time limit for GAMS job
-        time_kill: int
-            Additional time to time_limit till a process should be killed
-
-        Returns
-        -------
-        TraceRecord: job results
-        str: standard output of job
-        str: standard error of job
+        job : Job
+            Benchmark job
         """
-        # pylint: disable=no-self-use,too-many-arguments,unused-argument
-        return TraceRecord(), "", ""
+        # pylint: disable=unused-argument,no-self-use
+        return Result(TraceRecord(), "", "")

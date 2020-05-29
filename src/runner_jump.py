@@ -9,6 +9,7 @@ from multiprocessing import Process
 from src.runner import Runner
 from src.runner_direct import RunnerDirect
 from src.trace import TraceRecord
+from src.result import Result
 
 class RunnerJump(Runner):
     """
@@ -63,10 +64,10 @@ class RunnerJump(Runner):
             pass
 
 
-    def _program(self, workdir, name, conf, time_limit):
+    def _program(self, job):
         # gams options
         jlconf = ""
-        for (key, value) in conf:
+        for (key, value) in job.configuration:
             if key == 'id':
                 continue
             jlconf += 'set_optimizer_attribute(m, "%s", "%s")\n' % (key, value)
@@ -94,73 +95,61 @@ time_used = @elapsed JuMP.optimize!(m)
 open(joinpath("%s", "jump_results.txt"), "w") do io
     write(io, "time_used " * string(time_used) * "\n")
 end
-        """ % (workdir, name, self.sysdir, workdir, jlconf, time_limit, workdir)
+        """ % (job.workdir, job.name, self.sysdir, job.workdir, jlconf,
+               job.max_time, job.workdir)
 
-        prog = 'jump_' + name + '.jl'
-        with open(os.path.join(workdir, prog), 'w') as fio:
+        prog = 'jump_' + job.name + '.jl'
+        with open(os.path.join(job.workdir, prog), 'w') as fio:
             fio.write(jlprog)
         return prog, jlprog
 
 
-    def run(self, workdir, name, conf, time_limit=60, time_kill=30):
+    def run(self, job):
         """
-        Runs a GAMS job through JuMP
+        Runs a GAMS job using the command line. Returns result.
 
         Arguments
         ---------
-        workdir: string
-            Working directory for job
-        name: string
-            Name of job (job file without extension)
-        conf: list
-            GAMS options
-        time_limit: int
-            Time limit for GAMS job
-        time_kill: int
-            Additional time to time_limit till a process should be killed
-
-        Returns
-        -------
-        TraceRecord: job results
-        str: standard output of job
-        str: standard error of job
+        job : Job
+            Benchmark job
         """
-        # pylint: disable=too-many-arguments,too-many-locals
+        # pylint: disable=too-many-locals
 
         # solve
-        prog, jlprog = self._program(workdir, name, conf, time_limit)
+        prog, jlprog = self._program(job)
         if self.use_pyjulia:
             process = Process(target=self._run_julia(jlprog))
             process.start()
-            process.join(timeout=time_limit + time_kill)
+            process.join(timeout=job.max_time + job.kill_time)
             process.terminate()
             stdout = ""
             stderr = ""
         else:
-            cmd = ['timeout', '%d' % (time_limit + time_kill), 'julia', os.path.join(workdir, prog)]
+            progpath = os.path.join(job.workdir, prog)
+            cmd = ['timeout', '%d' % (job.max_time + job.kill_time), 'julia', progpath]
             process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout, stderr = process.communicate()
             stdout = stdout.decode("utf-8")
             stderr = stderr.decode("utf-8")
 
         # store stdout / stderr
-        with open(os.path.join(workdir, 'stdout.txt'), 'w') as fio:
+        with open(os.path.join(job.workdir, 'stdout.txt'), 'w') as fio:
             fio.write(stdout)
-        with open(os.path.join(workdir, 'stderr.txt'), 'w') as fio:
+        with open(os.path.join(job.workdir, 'stderr.txt'), 'w') as fio:
             fio.write(stderr)
 
         # process solution
         trc = TraceRecord()
         try:
-            trc.load_trc(os.path.join(workdir, "trace.trc"))
+            trc.load_trc(os.path.join(job.workdir, "trace.trc"))
         except FileNotFoundError:
             trc.record['SolverStatus'] = 13
             trc.record['ModelStatus'] = 12
 
-        trc.record['InputFileName'] = name + '.jl'
+        trc.record['InputFileName'] = job.filename()
 
         # process solution (jump result file)
-        result_file = os.path.join(workdir, 'jump_results.txt')
+        result_file = os.path.join(job.workdir, 'jump_results.txt')
         if os.path.exists(result_file):
             with open(result_file, 'r') as fio:
                 lines = fio.readlines()
@@ -174,6 +163,6 @@ end
             trc.record['ETInterfaceOverhead'] = trc.record['ETInterface'] - trc.record['SolverTime']
 
         # write trace file
-        trc.write(os.path.join(workdir, 'trace.trc'))
+        trc.write(os.path.join(job.workdir, 'trace.trc'))
 
-        return trc, stdout, stderr
+        return Result(trc, stdout, stderr)

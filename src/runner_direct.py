@@ -8,6 +8,7 @@ import subprocess
 
 from src.runner import Runner
 from src.trace import TraceRecord
+from src.result import Result
 
 class RunnerDirect(Runner):
     """
@@ -38,62 +39,42 @@ class RunnerDirect(Runner):
         return re.findall("[0-9]+.[0-9]+.[0-9]+", stdout)[0]
 
 
-    def command(self, workdir, name, conf, time_limit=60, time_kill=30):
+    def command(self, job):
         """
-        GAMS command for given job
+        Runs a GAMS job using the command line
 
         Arguments
         ---------
-        workdir: string
-            Working directory for job
-        name: string
-            Name of job (job file without extension)
-        conf: list
-            GAMS options
-        time_limit: int
-            Time limit for GAMS job
-        time_kill: int
-            Additional time to time_limit till a process should be killed
+        job : Job
+            Benchmark job
         """
-        # pylint: disable=too-many-arguments
 
-        cmd = ['timeout', '%d' % (time_limit + time_kill),
-               os.path.join(self.sysdir, 'gams'), os.path.join(workdir, name + '.gms'),
-               'lo=2', 'al=0', 'ao=0', 'curdir=%s' % workdir, 'trace=trace.trc',
-               'traceOpt=5', 'reslim=%d' % time_limit, 'solprint=off', 'solvelink=5']
-        for (key, value) in conf:
+        cmd = ['timeout', '%d' % (job.max_time + job.kill_time),
+               os.path.join(self.sysdir, 'gams'),
+               os.path.join(job.workdir, job.name + '.gms'),
+               'lo=2', 'al=0', 'ao=0',
+               'curdir=%s' % job.workdir,
+               'trace=trace.trc', 'traceOpt=5',
+               'reslim=%d' % job.max_time,
+               'solprint=off', 'solvelink=5']
+        for (key, value) in job.configuration:
             if key == 'id':
                 continue
             cmd.append(key + "=" + value)
         return cmd
 
 
-    def run(self, workdir, name, conf, time_limit=60, time_kill=30):
+    def run(self, job):
         """
-        Runs a GAMS job using the command line
+        Runs a GAMS job using the command line. Returns result.
 
         Arguments
         ---------
-        workdir: string
-            Working directory for job
-        name: string
-            Name of job (job file without extension)
-        conf: list
-            GAMS options
-        time_limit: int
-            Time limit for GAMS job
-        time_kill: int
-            Additional time to time_limit till a process should be killed
-
-        Returns
-        -------
-        TraceRecord: job results
-        str: standard output of job
-        str: standard error of job
+        job : Job
+            Benchmark job
         """
-        # pylint: disable=too-many-arguments
 
-        cmd = self.command(workdir, name, conf, time_limit, time_kill)
+        cmd = self.command(job)
 
         # solve
         time_interface = time.time()
@@ -105,15 +86,15 @@ class RunnerDirect(Runner):
         stderr = stderr.decode("utf-8")
 
         # store stdout / stderr
-        with open(os.path.join(workdir, 'stdout.txt'), 'w') as fio:
+        with open(os.path.join(job.workdir, 'stdout.txt'), 'w') as fio:
             fio.write(stdout)
-        with open(os.path.join(workdir, 'stderr.txt'), 'w') as fio:
+        with open(os.path.join(job.workdir, 'stderr.txt'), 'w') as fio:
             fio.write(stderr)
 
         # process solution
         trc = TraceRecord()
         try:
-            trc.load_trc(os.path.join(workdir, "trace.trc"))
+            trc.load_trc(os.path.join(job.workdir, "trace.trc"))
         except FileNotFoundError:
             trc.record['SolverStatus'] = 13
             trc.record['ModelStatus'] = 12
@@ -121,6 +102,6 @@ class RunnerDirect(Runner):
         trc.record['ETInterface'] = time_interface
         if trc.record['SolverTime'] is not None:
             trc.record['ETIntOverhead'] = trc.record['ETInterface'] - trc.record['SolverTime']
-        trc.write(os.path.join(workdir, "trace.trc"))
+        trc.write(os.path.join(job.workdir, "trace.trc"))
 
-        return trc, stdout, stderr
+        return Result(trc, stdout, stderr)
