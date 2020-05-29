@@ -1,4 +1,4 @@
-![](https://github.com/renkekuhlmann/gams-benchmark/workflows/GitHub%20CI/badge.svg)
+![GitHub CI](https://github.com/renkekuhlmann/gams-benchmark/workflows/GitHub%20CI/badge.svg)
 
 # GAMS Benchmark
 
