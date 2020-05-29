@@ -33,6 +33,48 @@ class Result:
         return self.trace.record['ModelStatus']
 
 
+    def model_type(self):
+        """
+        Returns the model type
+        """
+        return self.trace.record['ModelType']
+
+
+    def direction(self):
+        """
+        Returns the optimization sense
+        """
+        return self.trace.record['Direction']
+
+
+    def solver(self):
+        """
+        Returns the solver name
+        """
+        return self.trace.record['SolverName']
+
+
+    def n_variables(self):
+        """
+        Returns the number of variables
+        """
+        return self.trace.record['NumberOfVariables']
+
+
+    def n_constraints(self):
+        """
+        Returns the number of constraints
+        """
+        return self.trace.record['NumberOfEquations']
+
+
+    def n_nonzeros(self):
+        """
+        Returns the number of nonzeros
+        """
+        return self.trace.record['NumberOfNonZeros']
+
+
     def objective(self):
         """
         Returns the objective function value

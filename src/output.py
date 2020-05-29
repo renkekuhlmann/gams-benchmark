@@ -19,11 +19,13 @@ class Output:
     """
     Formats and prints benchmark results
     """
-    # pylint: disable=too-few-public-methods
+    # pylint: disable=too-few-public-methods,too-many-instance-attributes
 
     def __init__(self):
-        self.print_meta = True
+        self.print_benchmark_meta = True
         self.print_name = True
+        self.print_configuration_meta = True
+        self.print_job_meta = True
         self.print_status = True
         self.print_objective = True
         self.print_time = True
@@ -36,10 +38,14 @@ class Output:
         """
         # pylint: disable=too-many-arguments
         output = ''
-        if self.print_meta:
-            output += self._output_meta(job, n_jobs_left, thread_id) + ' │ '
+        if self.print_benchmark_meta:
+            output += self._output_benchmark_meta(n_jobs_left, thread_id) + ' │ '
         if self.print_name:
             output += self._output_name(result) + ' │ '
+        if self.print_configuration_meta:
+            output += self._output_configuration_meta(job, result) + ' │ '
+        if self.print_job_meta:
+            output += self._output_job_meta(result) + ' │ '
         if self.print_status:
             output += self._output_status(result) + ' │ '
         if self.print_objective:
@@ -52,16 +58,55 @@ class Output:
 
 
     @staticmethod
-    def _output_meta(job, n_jobs_left, thread_id):
+    def _output_benchmark_meta(n_jobs_left, thread_id):
         msg = '{:4d} '.format(n_jobs_left)
         msg += '{:2d} '.format(thread_id)
-        msg += '{:2d}'.format(job.configuration[0][1])
         return msg
 
 
     @staticmethod
     def _output_name(result):
         return '{:35s}'.format(result.name())
+
+
+    @staticmethod
+    def _output_configuration_meta(job, result):
+        msg = '{:2d} '.format(job.configuration[0][1])
+        if result.solver() is None:
+            msg += '{:6s}'.format('')
+        else:
+            msg += '{:6s}'.format(result.solver()[:6])
+        return msg
+
+
+    @staticmethod
+    def _output_job_meta(result):
+        msg = ''
+        if result.model_type() is None:
+            msg += '{:5s} '.format('')
+        else:
+            msg += '{:5s} '.format(result.model_type())
+        if result.direction() is None:
+            msg += '{:3s} '.format('')
+        elif result.direction() == 0:
+            msg += 'MIN '
+        elif result.direction() == 1:
+            msg += 'MAX '
+        else:
+            msg += '{:3s} '.format('')
+        if result.n_variables() is None:
+            msg += '{:8s} '.format('')
+        else:
+            msg += '{:8d} '.format(result.n_variables())
+        if result.n_constraints() is None:
+            msg += '{:8s} '.format('')
+        else:
+            msg += '{:8d} '.format(result.n_constraints())
+        if result.n_nonzeros() is None:
+            msg += '{:8s} '.format('')
+        else:
+            msg += '{:8d} '.format(result.n_nonzeros())
+        return msg
 
 
     @staticmethod
