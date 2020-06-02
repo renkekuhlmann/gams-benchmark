@@ -39,6 +39,11 @@ class Trace:
         self.records = []
 
 
+    @staticmethod
+    def _get_record_name(trace_record):
+        return trace_record.record['InputFileName']
+
+
     def append(self, trace_record):
         """
         Add trace record to database
@@ -49,6 +54,8 @@ class Trace:
             Trace Record to be added
         """
         self.records.append(trace_record)
+        self.records.sort(key=self._get_record_name)
+
 
 
     def append_trc(self, trcfile):

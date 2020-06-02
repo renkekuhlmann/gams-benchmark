@@ -8,7 +8,8 @@ import queue
 import threading
 
 from src.job import Job
-from src.trace import Trace
+from src.trace import Trace, TraceRecord
+from src.result import Result
 from src.output import Output
 
 class Scheduler:
@@ -120,6 +121,11 @@ class Scheduler:
 
             if job.init_workdir() and self._duration() <= max_duration:
                 result = self.runner.run(job)
+                self.trace.append(result.trace)
+            else:
+                trace = TraceRecord()
+                trace.load_trc(os.path.join(job.workdir, 'trace.trc'))
+                result = Result(trace, "", "")
+                self.trace.append(trace)
 
-            self.trace.append(result.trace)
             self.output.print(job, result, self._duration(), self.num_jobs(), thread_id)

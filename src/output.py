@@ -19,7 +19,7 @@ class Output:
     """
     Formats and prints benchmark results
     """
-    # pylint: disable=too-few-public-methods,too-many-instance-attributes
+    # pylint: disable=too-few-public-methods
 
     def __init__(self):
         self.print_benchmark_meta = True
@@ -39,9 +39,9 @@ class Output:
         # pylint: disable=too-many-arguments
         output = ''
         if self.print_benchmark_meta:
-            output += self._output_benchmark_meta(n_jobs_left, thread_id) + ' │ '
+            output += self._output_benchmark_meta(n_jobs_left, thread_id, cumtime) + ' │ '
         if self.print_name:
-            output += self._output_name(result) + ' │ '
+            output += self._output_name(job) + ' │ '
         if self.print_configuration_meta:
             output += self._output_configuration_meta(job, result) + ' │ '
         if self.print_job_meta:
@@ -52,26 +52,25 @@ class Output:
             output += self._output_objective(result) + ' │ '
         if self.print_time:
             output += self._output_time(job, result) + ' │ '
-        if self.print_cumtime:
-            output += self._output_cumtime(cumtime) + ' │ '
         print(output)
 
 
     @staticmethod
-    def _output_benchmark_meta(n_jobs_left, thread_id):
-        msg = '{:4d} '.format(n_jobs_left)
-        msg += '{:2d} '.format(thread_id)
+    def _output_benchmark_meta(n_jobs_left, thread_id, cumtime):
+        msg = '{:2d} '.format(thread_id)
+        msg += '{:4d} '.format(n_jobs_left)
+        msg += '{:8.1f}'.format(cumtime)
         return msg
 
 
     @staticmethod
-    def _output_name(result):
-        return '{:35s}'.format(result.name())
+    def _output_name(job):
+        return '{:35s}'.format(job.filename())
 
 
     @staticmethod
     def _output_configuration_meta(job, result):
-        msg = '{:2d} '.format(job.configuration[0][1])
+        msg = '{:1d} '.format(job.configuration[0][1])
         if result.solver() is None:
             msg += '{:6s}'.format('')
         else:
@@ -200,8 +199,3 @@ class Output:
         msg += '{:7s}'.format(status)
         msg += '{:s}'.format(BColors.ENDC)
         return msg
-
-
-    @staticmethod
-    def _output_cumtime(cumtime):
-        return '{:8.1f}'.format(cumtime)

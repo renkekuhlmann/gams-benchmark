@@ -2,7 +2,7 @@
 """ Job """
 
 import os
-from shutil import copyfile
+import shutil
 
 class Job:
     """
@@ -34,8 +34,11 @@ class Job:
         """
 
         if os.path.exists(self.workdir):
-            return False
+            if not os.path.exists(os.path.join(self.workdir, 'trace.trc')):
+                shutil.rmtree(self.workdir)
+            else:
+                return False
         os.makedirs(self.workdir)
         model_file = os.path.basename(self.model_file)
-        copyfile(self.model_file, os.path.join(self.workdir, model_file))
+        shutil.copyfile(self.model_file, os.path.join(self.workdir, model_file))
         return True

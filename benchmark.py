@@ -104,7 +104,8 @@ def _main():
     elif args.interface == 'jump':
         from src.runner_jump import RunnerJump
         if args.threads == 1:
-            runner = RunnerJump(args.gams, use_pyjulia=True)
+            # runner = RunnerJump(args.gams, use_pyjulia=True)
+            runner = RunnerJump(args.gams, use_pyjulia=False)
         else:
             runner = RunnerJump(args.gams, use_pyjulia=False)
 

@@ -101,7 +101,7 @@ class RunnerDirect(Runner):
 
         trc.record['ETInterface'] = time_interface
         if trc.record['SolverTime'] is not None:
-            trc.record['ETIntOverhead'] = trc.record['ETInterface'] - trc.record['SolverTime']
+            trc.record['ETInterfaceOverhead'] = trc.record['ETInterface'] - trc.record['SolverTime']
         trc.write(os.path.join(job.workdir, "trace.trc"))
 
         return Result(trc, stdout, stderr)
