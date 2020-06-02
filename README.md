@@ -6,10 +6,16 @@ This is a small Python script for benchmarking [GAMS] -
 either directly using the command line interface or through [JuMP] or [Pyomo].
 The results are exported to `.trc` files that can be analyzed with [Paver2].
 
-Benchmark runs can be interrupted at any time and resumed later on. Simply restart
-with the same options.
+To start a benchmark, run for example:
+```
+python benchmark.py --testset=minlplib --threads=4 --gams=/opt/gams --gamsopt="solver=scip"
+```
 
-For help, run:
+Benchmark runs can be interrupted at any time and resumed later on. Simply restart
+with the same options. If a `.trc` file can be found for a model, that will be used.
+Otherwise the process is (re-)started.
+
+For further help, run:
 ```bash
 python benchmark.py -h
 ```
