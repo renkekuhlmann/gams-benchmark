@@ -12,8 +12,8 @@ python benchmark.py --testset=minlplib --threads=4 --gams=/opt/gams --gamsopt="s
 ```
 
 Benchmark runs can be interrupted at any time and resumed later on. Simply restart
-with the same options. If a `.trc` file can be found for a model, that will be used.
-Otherwise the process is (re-)started.
+with the same options. If a `.trc` file can be found for a model, those results
+will be used. Otherwise the process is (re-)started.
 
 For further help, run:
 ```bash
@@ -35,12 +35,12 @@ m = Model()
 There are a few testlibs that can be setup conveniently, for example the
 [MINLPlib]. Simply do
 ```bash
-cd testests/minlplib
+cd <repository_root>/testests/minlplib
 ./update.sh
 ```
 to download (or update) the model files and
 ```bash
-cd testsets
+cd <repository_root>/testsets
 ./convert.sh minlplib pyomo
 ```
 to convert the models to the [Pyomo] format.
