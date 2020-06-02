@@ -78,8 +78,8 @@ class RunnerDirect(Runner):
 
         # solve
         time_interface = time.time()
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                   env={'LD_LIBRARY_PATH': self.sysdir})
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                                #    env={'LD_LIBRARY_PATH': self.sysdir})
         stdout, stderr = process.communicate()
         time_interface = time.time() - time_interface
         stdout = stdout.decode("utf-8")

@@ -17,8 +17,12 @@ def _arguments():
     parser.add_argument('--testset',
                         type=str,
                         default='minlplib',
-                        choices=['minlplib', 'princetonlib'],
+                        choices=['minlplib', 'princetonlib', 'other'],
                         help='Name of testset (default: minlplib)')
+    parser.add_argument('--modelpath',
+                        type=str,
+                        default='',
+                        help='Path to models (.gms, .py or .jl) if testset=other')
     parser.add_argument('--result',
                         type=str,
                         default='latest',
@@ -114,6 +118,8 @@ def _main():
         model_path = os.path.join('testsets', 'minlplib', runner.modelfile_ext)
     elif args.testset == 'princetonlib':
         model_path = os.path.join('testsets', 'princetonlib', runner.modelfile_ext)
+    elif args.testset == 'other':
+        model_path = args.modelpath
 
     # run benchmark
     scheduler = Scheduler(runner, args.result, args.gamsopt)
