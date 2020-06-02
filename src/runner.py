@@ -39,4 +39,4 @@ class Runner:
             Benchmark job
         """
         # pylint: disable=unused-argument,no-self-use
-        return Result(TraceRecord(), "", "")
+        return Result(TraceRecord(job.filename()), "", "")

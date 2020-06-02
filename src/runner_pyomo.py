@@ -115,7 +115,7 @@ with open(os.path.join('%s', 'pyomo_result.pkl'), 'wb') as f:
             fio.write(stderr)
 
         # process solution
-        trc = TraceRecord()
+        trc = TraceRecord(job.filename())
         try:
             with open(os.path.join(job.workdir, 'pyomo_result.pkl'), 'rb') as fio:
                 results, trc.record['ETInterface'] = pickle.load(fio)
@@ -126,6 +126,7 @@ with open(os.path.join('%s', 'pyomo_result.pkl'), 'wb') as f:
             # parse trace file
             if os.path.exists(trcfile):
                 trc.load_trc(trcfile)
+                trc.record['InputFileName'] = job.filename()
             # parse lst and pyomo result file
             else:
                 trc.load_lst(os.path.join(tmpdir, 'output.lst'))
@@ -145,8 +146,6 @@ with open(os.path.join('%s', 'pyomo_result.pkl'), 'wb') as f:
         except IOError:
             trc.record['SolverStatus'] = 13
             trc.record['ModelStatus'] = 12
-
-        trc.record['InputFileName'] = job.filename()
 
         # compute interface overhead
         if trc.record['SolverTime'] is not None and trc.record['ETInterface'] is not None:

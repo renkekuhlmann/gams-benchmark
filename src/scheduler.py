@@ -123,7 +123,7 @@ class Scheduler:
                 result = self.runner.run(job)
                 self.trace.append(result.trace)
             else:
-                trace = TraceRecord()
+                trace = TraceRecord(job.filename())
                 trace.load_trc(os.path.join(job.workdir, 'trace.trc'))
                 result = Result(trace, "", "")
                 self.trace.append(trace)

@@ -67,7 +67,7 @@ class Trace:
         trcfile: str
             Path to trace file
         """
-        trc = TraceRecord()
+        trc = TraceRecord(None)
         trc.load_trc(trcfile)
         self.append(trc)
 
@@ -93,10 +93,17 @@ class TraceRecord:
     Trace Record stores solve attributes that are present in a GAMS trace file
     """
 
-    def __init__(self):
+    def __init__(self, filename):
         self.record = dict()
         for key in TRACE_ENTRIES:
             self.record[key] = None
+        self.record['InputFileName'] = filename
+
+        # some default values necessary for correct paver input
+        self.record['Direction'] = 0
+        self.record['SolverStatus'] = 13
+        self.record['ModelStatus'] = 12
+        self.record['SolverTime'] = 0
 
 
     def load_lst(self, lstfile):

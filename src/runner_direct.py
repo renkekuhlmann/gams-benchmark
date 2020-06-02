@@ -92,7 +92,7 @@ class RunnerDirect(Runner):
             fio.write(stderr)
 
         # process solution
-        trc = TraceRecord()
+        trc = TraceRecord(job.filename())
         try:
             trc.load_trc(os.path.join(job.workdir, "trace.trc"))
         except FileNotFoundError:

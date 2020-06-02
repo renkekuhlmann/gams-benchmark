@@ -139,14 +139,13 @@ end
             fio.write(stderr)
 
         # process solution
-        trc = TraceRecord()
+        trc = TraceRecord(job.filename())
         try:
             trc.load_trc(os.path.join(job.workdir, "trace.trc"))
+            trc.record['InputFileName'] = job.filename()
         except FileNotFoundError:
             trc.record['SolverStatus'] = 13
             trc.record['ModelStatus'] = 12
-
-        trc.record['InputFileName'] = job.filename()
 
         # process solution (jump result file)
         result_file = os.path.join(job.workdir, 'jump_results.txt')
