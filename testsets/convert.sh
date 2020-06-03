@@ -29,12 +29,15 @@ fi
 skip=
 if [ $format == "pyomo" ]; then
    echo "$format" > convert.opt
+   mkdir -p $testset/py
+elif [ $format == "jump" ]; then
+   echo "$format" > convert.opt
+   mkdir -p $testset/jl
 else
    echo "Unknown format!"
    exit 1
 fi
 
-mkdir -p $testset/py
 for f in $testset/gms/*.gms
 do
    filename=$(basename -- "$f")
@@ -46,7 +49,12 @@ do
    fi
 
    gams $f lo=0 solver=convert optfile=1 || exit 1
-   mv gams.py $testset/py/$filename.py
+
+   if [ $format == "pyomo" ]; then
+      mv gams.py $testset/py/$filename.py
+   elif [ $format == "jump" ]; then
+      mv gams.jl $testset/jl/$filename.jl
+   fi
    rm *.lst
 
    printf "ok\n"
