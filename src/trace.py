@@ -36,12 +36,7 @@ class Trace:
     """
 
     def __init__(self):
-        self.records = []
-
-
-    @staticmethod
-    def _get_record_name(trace_record):
-        return trace_record.record['InputFileName']
+        self.records = dict()
 
 
     def append(self, trace_record):
@@ -53,9 +48,7 @@ class Trace:
         trace_record: TraceRecord
             Trace Record to be added
         """
-        self.records.append(trace_record)
-        self.records.sort(key=self._get_record_name)
-
+        self.records[trace_record.record['InputFileName']] = trace_record
 
 
     def append_trc(self, trcfile):
@@ -72,6 +65,53 @@ class Trace:
         self.append(trc)
 
 
+    def load_solu(self, solufile):
+        """
+        Loads a solution file to trace format
+
+        Arguments
+        ---------
+        solufile: str
+            Solution file
+        """
+        if not os.path.exists(solufile):
+            return
+
+        with open(solufile, 'r') as fio:
+            lines = fio.readlines()
+
+        for line in lines:
+            entry = list(filter(None, line.replace('\n', '').split(" ")))
+            if len(entry) < 2:
+                continue
+            if entry[0] == '=opt=':
+                trc = TraceRecord(entry[1])
+                trc.record['ModelStatus'] = 1
+                trc.record['ObjectiveValue'] = float(entry[2])
+                trc.record['ObjectiveValueEstimate'] = float(entry[2])
+                self.append(trc)
+            elif entry[0] == '=inf=':
+                trc = TraceRecord(entry[1])
+                trc.record['ModelStatus'] = 4
+                self.append(trc)
+            elif entry[0] == '=best=':
+                if entry[1] in self.records:
+                    self.records[entry[1]].record['ObjectiveValue'] = float(entry[2])
+                else:
+                    trc = TraceRecord(entry[1])
+                    trc.record['ModelStatus'] = 2
+                    trc.record['ObjectiveValue'] = float(entry[2])
+                    self.append(trc)
+            elif entry[0] == '=bestdual=':
+                if entry[1] in self.records:
+                    self.records[entry[1]].record['ObjectiveValueEstimate'] = float(entry[2])
+                else:
+                    trc = TraceRecord(entry[1])
+                    trc.record['ModelStatus'] = 2
+                    trc.record['ObjectiveValueEstimate'] = float(entry[2])
+                    self.append(trc)
+
+
     def write(self, trcfile):
         """
         Writes a trace file from database
@@ -83,9 +123,10 @@ class Trace:
         """
         if len(self.records) == 0:
             return
-        self.records[0].write_header(trcfile)
-        for record in self.records:
-            record.write_record(trcfile)
+        for i, key in enumerate(sorted(self.records.keys())):
+            if i == 0:
+                self.records[key].write_header(trcfile)
+            self.records[key].write_record(trcfile)
 
 
 class TraceRecord:
@@ -162,7 +203,7 @@ class TraceRecord:
         trcfile: str
             Path to trace file
         """
-        # pylint: disable=too-many-branches
+        # pylint: disable=too-many-branches,too-many-statements
 
         with open(trcfile, 'r') as fio:
             lines = fio.readlines()
@@ -222,9 +263,15 @@ class TraceRecord:
                 if element == "NA" or len(element) == 0:
                     element = None
                 if current_header in TRACE_ENTRIES_INTEGER:
-                    element = int(element) if element is not None else None
+                    try:
+                        element = int(element)
+                    except (ValueError, TypeError):
+                        element = None
                 if current_header in TRACE_ENTRIES_REAL:
-                    element = float(element) if element is not None else None
+                    try:
+                        element = float(element)
+                    except (ValueError, TypeError):
+                        element = None
 
                 # store element
                 if current_header in TRACE_ENTRIES:

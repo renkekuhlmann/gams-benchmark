@@ -11,6 +11,7 @@ import sys
 
 
 from src.scheduler import Scheduler
+from src.output import Output
 
 def _arguments():
     parser = argparse.ArgumentParser(description='Benchmark GAMS.')
@@ -60,6 +61,11 @@ def _arguments():
                         default='direct',
                         choices=['direct', 'pyomo', 'jump'],
                         help='Call GAMS through interface (default: direct)')
+    parser.add_argument('--output',
+                        type=str,
+                        default='jobs|name|config|model|status|objective|time',
+                        help='Output columns separated by "|"'
+                             '(default: jobs|name|config|model|status|objective|time)')
     args = parser.parse_args()
 
     # check arguments
@@ -116,14 +122,17 @@ def _main():
     # select model files
     if args.testset == 'minlplib':
         model_path = os.path.join('testsets', 'minlplib', runner.modelfile_ext)
+        solu_file = os.path.join('testsets', 'minlplib', 'minlplib.solu')
     elif args.testset == 'princetonlib':
         model_path = os.path.join('testsets', 'princetonlib', runner.modelfile_ext)
+        solu_file = None
     elif args.testset == 'other':
         model_path = args.modelpath
+        solu_file = None
 
     # run benchmark
-    scheduler = Scheduler(runner, args.result, args.gamsopt)
-    scheduler.create(model_path, args.jobs_max, args.max_time, args.kill_time)
+    scheduler = Scheduler(runner, args.result, args.gamsopt, Output(args.output))
+    scheduler.create(model_path, args.jobs_max, args.max_time, args.kill_time, solu_file)
     scheduler.run(args.threads, args.jobs_max_time)
 
 

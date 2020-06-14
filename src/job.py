@@ -9,7 +9,7 @@ class Job:
     A Benchmark Job
     Holds GAMS options and information about model file and working directory
     """
-    # pylint: disable=too-few-public-methods
+    # pylint: disable=too-few-public-methods,too-many-instance-attributes
 
     def __init__(self, name, workdir, model_file, configuration, max_time, kill_time):
         # pylint: disable=too-many-arguments
@@ -19,6 +19,9 @@ class Job:
         self.model_file = model_file
         self.max_time = max_time
         self.kill_time = kill_time
+        self.model_status = None
+        self.objective = None
+        self.objective_estimate = None
 
 
     def filename(self):

@@ -21,15 +21,8 @@ class Output:
     """
     # pylint: disable=too-few-public-methods,too-many-instance-attributes
 
-    def __init__(self):
-        self.print_benchmark_meta = True
-        self.print_name = True
-        self.print_configuration_meta = True
-        self.print_job_meta = True
-        self.print_status = True
-        self.print_objective = True
-        self.print_time = True
-        self.print_cumtime = True
+    def __init__(self, output_cols):
+        self.output_cols = output_cols.split("|")
 
 
     def print(self, job, result, cumtime, n_jobs_left, thread_id):
@@ -38,20 +31,21 @@ class Output:
         """
         # pylint: disable=too-many-arguments
         output = ''
-        if self.print_benchmark_meta:
-            output += self._output_benchmark_meta(n_jobs_left, thread_id, cumtime) + ' │ '
-        if self.print_name:
-            output += self._output_name(job) + ' │ '
-        if self.print_configuration_meta:
-            output += self._output_configuration_meta(job, result) + ' │ '
-        if self.print_job_meta:
-            output += self._output_job_meta(result) + ' │ '
-        if self.print_status:
-            output += self._output_status(result) + ' │ '
-        if self.print_objective:
-            output += self._output_objective(result) + ' │ '
-        if self.print_time:
-            output += self._output_time(job, result) + ' │ '
+        for col in self.output_cols:
+            if col == 'jobs':
+                output += self._output_benchmark_meta(n_jobs_left, thread_id, cumtime) + ' │ '
+            if col == 'name':
+                output += self._output_name(job) + ' │ '
+            if col == 'config':
+                output += self._output_configuration_meta(job, result) + ' │ '
+            if col == 'model':
+                output += self._output_job_meta(result) + ' │ '
+            if col == 'status':
+                output += self._output_status(result) + ' │ '
+            if col == 'objective':
+                output += self._output_objective(job, result) + ' │ '
+            if col == 'time':
+                output += self._output_time(job, result) + ' │ '
         print(output)
 
 
@@ -151,18 +145,60 @@ class Output:
 
 
     @staticmethod
-    def _output_objective(result):
+    def _output_objective(job, result):
+        # pylint: disable=too-many-branches,too-many-statements
+        color = BColors.OKGREEN
+        status = 'ok'
+        if result.objective_estimate() is not None and job.objective is not None:
+            if result.direction() == 0 and result.objective_estimate() > job.objective + 1e-6:
+                color = BColors.WARNING
+                status = 'dual'
+            elif result.direction() == 1 and result.objective_estimate() < job.objective - 1e-6:
+                color = BColors.WARNING
+                status = 'dual'
+        if result.objective() is not None and job.objective_estimate is not None:
+            if result.direction() == 0 and result.objective() < job.objective_estimate - 1e-6:
+                color = BColors.FAIL
+                status = 'primal'
+            elif result.direction() == 1 and result.objective() > job.objective_estimate + 1e-6:
+                color = BColors.FAIL
+                status = 'primal'
+        if result.model_status() is not None:
+            if (job.model_status == 4 and result.solver_status() == 1 and
+                    result.model_status() in [1, 2, 8, 15, 16, 17]):
+                color = BColors.FAIL
+                status = 'status'
+            if result.solver_status() == 1 and result.model_status() == 4 and job.model_status == 1:
+                color = BColors.FAIL
+                status = 'status'
+
         msg = ''
         if result.objective_estimate() is None:
             msg += '{:10s} '.format('')
         else:
             msg += '{: 9.3e} '.format(result.objective_estimate())
+        if result.objective_estimate() is None or job.objective is None:
+            msg += '{:10s} '.format('')
+        elif result.direction() == 0:
+            msg += '{: 9.3e} '.format(max(0, result.objective_estimate() - job.objective))
+        elif result.direction() == 1:
+            msg += '{: 9.3e} '.format(max(0, job.objective - result.objective_estimate()))
+        else:
+            msg += '{:10s} '.format('')
         if result.objective() is None:
             msg += '{:10s} '.format('')
         else:
             msg += '{: 9.3e} '.format(result.objective())
-        msg += '{:s}'.format(BColors.OKGREEN)
-        msg += '{:4s}'.format('ok')
+        if result.objective() is None or job.objective_estimate is None:
+            msg += '{:10s} '.format('')
+        elif result.direction() == 0:
+            msg += '{: 9.3e} '.format(max(0, job.objective_estimate - result.objective()))
+        elif result.direction() == 1:
+            msg += '{: 9.3e} '.format(max(0, result.objective() - job.objective_estimate))
+        else:
+            msg += '{:10s} '.format('')
+        msg += '{:s}'.format(color)
+        msg += '{:7s}'.format(status)
         msg += '{:s}'.format(BColors.ENDC)
         return msg
 

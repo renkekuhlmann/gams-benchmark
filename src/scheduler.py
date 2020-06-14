@@ -10,21 +10,20 @@ import threading
 from src.job import Job
 from src.trace import Trace, TraceRecord
 from src.result import Result
-from src.output import Output
 
 class Scheduler:
     """
     Creates benchmark jobs and runs jobs (in parallel)
     """
 
-    def __init__(self, runner, result_path, configurations):
+    def __init__(self, runner, result_path, configurations, output):
         self.runner = runner
         self.result_path = result_path
         self.configurations = configurations
         self.time_start = time.time()
         self.jobs = queue.Queue()
         self.trace = Trace()
-        self.output = Output()
+        self.output = output
 
 
     def _model_files(self, model_path):
@@ -49,7 +48,7 @@ class Scheduler:
         return self.jobs.qsize()
 
 
-    def create(self, model_path, max_jobs=10000000, max_time=60, kill_time=30):
+    def create(self, model_path, max_jobs=10000000, max_time=60, kill_time=30, solu_file=None):
         """
         Creates benchmark jobs
 
@@ -64,7 +63,15 @@ class Scheduler:
         kill_time: int
             Time (+max_time) after which a process should be killed
         """
+        # pylint: disable=too-many-arguments
 
+        # load solution file
+        optsol = None
+        if solu_file is not None:
+            optsol = Trace()
+            optsol.load_solu(solu_file)
+
+        # create jobs
         for conf in self.configurations:
             conf_name = self._configuration_name(conf)
             for model in self._model_files(model_path):
@@ -73,6 +80,11 @@ class Scheduler:
                 modelname = os.path.splitext(os.path.basename(model))[0]
                 workdir = os.path.join(self.result_path, conf_name, modelname)
                 job = Job(modelname, workdir, model, conf, max_time, kill_time)
+                if optsol is not None and modelname in optsol.records:
+                    record = optsol.records[modelname].record
+                    job.model_status = record['ModelStatus']
+                    job.objective = record['ObjectiveValue']
+                    job.objective_estimate = record['ObjectiveValueEstimate']
                 self.jobs.put(job)
 
 
