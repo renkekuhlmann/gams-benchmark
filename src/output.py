@@ -147,20 +147,26 @@ class Output:
     @staticmethod
     def _output_objective(job, result):
         # pylint: disable=too-many-branches,too-many-statements
+
+        msg = ''
+        if result.solver_status() != 1:
+            msg += '{:10s} {:10s} {:10s} {:10s} {:7s}'.format('', '', '', '', 'na')
+            return msg
+
         color = BColors.OKGREEN
         status = 'ok'
         if result.objective_estimate() is not None and job.objective is not None:
-            if result.direction() == 0 and result.objective_estimate() > job.objective + 1e-6:
+            if result.direction() == 0 and result.objective_estimate() > job.objective + 1e-5:
                 color = BColors.WARNING
                 status = 'dual'
-            elif result.direction() == 1 and result.objective_estimate() < job.objective - 1e-6:
+            elif result.direction() == 1 and result.objective_estimate() < job.objective - 1e-5:
                 color = BColors.WARNING
                 status = 'dual'
         if result.objective() is not None and job.objective_estimate is not None:
-            if result.direction() == 0 and result.objective() < job.objective_estimate - 1e-6:
+            if result.direction() == 0 and result.objective() < job.objective_estimate - 1e-5:
                 color = BColors.FAIL
                 status = 'primal'
-            elif result.direction() == 1 and result.objective() > job.objective_estimate + 1e-6:
+            elif result.direction() == 1 and result.objective() > job.objective_estimate + 1e-5:
                 color = BColors.FAIL
                 status = 'primal'
         if result.model_status() is not None:
