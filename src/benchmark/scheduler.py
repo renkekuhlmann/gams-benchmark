@@ -23,7 +23,7 @@ class Scheduler:
         self.configurations = configurations
         self.time_start = time.time()
         self.jobs = queue.Queue()
-        self.traces = queue.Queue()
+        self.results = queue.Queue()
         self.output = output
 
 
@@ -116,17 +116,20 @@ class Scheduler:
             for i in range(n_threads):
                 threads[i].join()
 
-        # write results
-        self.traces.put(None)
-        traces = TraceDict()
-        while True:
-            trace = self.traces.get()
-            if trace is None:
-                break
-            traces.append(trace)
+        # get results and put them in trace files per configuration
+        self.results.put(None)
+        traces = dict()
         for conf in self.configurations:
-            conf_name = self._configuration_name(conf)
-            traces.write(os.path.join(self.result_path, conf_name, 'trace.trc'))
+            traces[self._configuration_name(conf)] = TraceDict()
+        while True:
+            result = self.results.get()
+            if result is None:
+                break
+            traces[result[1]].append(result[2])
+
+        # write trace files
+        for conf_name, conf_traces in traces.items():
+            conf_traces.write(os.path.join(self.result_path, conf_name, 'trace.trc'))
 
 
     def _duration(self):
@@ -139,13 +142,15 @@ class Scheduler:
             if job is None:
                 break
 
+            conf_name = self._configuration_name(job.configuration)
+
             if job.init_workdir() and self._duration() <= max_duration:
                 result = self.runner.run(job)
-                self.traces.put(result.trace)
+                self.results.put((job.name, conf_name, result.trace))
             else:
                 trace = TraceRecord(job.filename())
                 trace.load_trc(os.path.join(job.workdir, 'trace.trc'))
                 result = Result(trace, "", "")
-                self.traces.put(trace)
+                self.results.put((job.name, conf_name, trace))
 
             self.output.print(job, result, self._duration(), self.num_jobs(), thread_id)
