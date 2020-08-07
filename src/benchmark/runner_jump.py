@@ -6,10 +6,10 @@ import re
 import subprocess
 from multiprocessing import Process
 
-from src.runner import Runner
-from src.runner_direct import RunnerDirect
-from src.trace import TraceRecord
-from src.result import Result
+from runner import Runner
+from runner_direct import RunnerDirect
+from trace import TraceRecord
+from result import Result
 
 class RunnerJump(Runner):
     """

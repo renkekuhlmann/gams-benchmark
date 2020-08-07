@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """ Runner """
 
-from src.trace import TraceRecord
-from src.result import Result
+from trace import TraceRecord
+from result import Result
 
 class Runner:
     """

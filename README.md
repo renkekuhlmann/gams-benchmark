@@ -8,7 +8,7 @@ The results are exported to `.trc` files that can be analyzed with [Paver2].
 
 To start a benchmark, run for example:
 ```
-python benchmark.py --testset=minlplib --threads=4 --gams=/opt/gams --gamsopt="solver=scip"
+python src/benchmark --testset=minlplib --threads=4 --gams=/opt/gams --gamsopt="solver=scip"
 ```
 
 Benchmark runs can be interrupted at any time and resumed later on. Simply restart
@@ -17,7 +17,7 @@ will be used. Otherwise the process is (re-)started.
 
 For further help, run:
 ```bash
-python benchmark.py -h
+python src/benchmark -h
 ```
 
 ## Testset Models
@@ -54,15 +54,15 @@ to convert the models to the [Pyomo] format.
 --result=<result_directory>
 --max_time=<max_time_in_seconds>
 --kill_time=<kill_time_in_seconds>
---jobs_max=<number_of_jobs>
---jobs_max_time=<max_jobs_time_in_seconds>
+--max_jobs=<number_of_jobs>
+--max_total_time=<max_total_time_in_seconds>
 --threads=<number_of_threads>
 ```
 Results are stored in the directory `<result_directory>` (default: latest). A
 job has a maximum time of `<max_time_in_seconds>` (default: 60) and will be
 killed after further `<kill_time_in_seconds>` (default: 30) have passed. The
 benchmark runs at most `<number_of_jobs>` number of jobs and will terminate (if
-not finished earlier) after `<max_jobs_time_in_seconds>`. Jobs can be executed
+not finished earlier) after `<max_total_time_in_seconds>`. Jobs can be executed
 in parallel with `<number_of_threads>` (default: 1) number of threads.
 
 ### Testset

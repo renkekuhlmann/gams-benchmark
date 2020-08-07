@@ -1,9 +1,8 @@
 */
 !testsets
-!src
+!src/
+!src/benchmark
 
 testsets/*/gms
 testsets/*/py
 testsets/*/jl
-
-src/__pycache__

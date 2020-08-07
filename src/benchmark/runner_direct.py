@@ -6,9 +6,9 @@ import re
 import time
 import subprocess
 
-from src.runner import Runner
-from src.trace import TraceRecord
-from src.result import Result
+from runner import Runner
+from trace import TraceRecord
+from result import Result
 
 class RunnerDirect(Runner):
     """

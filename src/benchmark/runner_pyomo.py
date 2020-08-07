@@ -10,9 +10,9 @@ import pickle
 import pyomo.environ as pyo
 import pyomo.version as pyover
 
-from src.runner import Runner
-from src.trace import TraceRecord
-from src.result import Result
+from runner import Runner
+from trace import TraceRecord
+from result import Result
 
 class RunnerPyomo(Runner):
     """

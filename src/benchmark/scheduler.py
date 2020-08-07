@@ -7,9 +7,9 @@ import time
 import queue
 import threading
 
-from src.job import Job
-from src.trace import Trace, TraceRecord
-from src.result import Result
+from job import Job
+from trace import Trace, TraceRecord
+from result import Result
 
 class Scheduler:
     """
