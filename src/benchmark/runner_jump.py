@@ -8,7 +8,7 @@ from multiprocessing import Process
 
 from runner import Runner
 from runner_direct import RunnerDirect
-from trace import TraceRecord
+from trace_record import TraceRecord
 from result import Result
 
 class RunnerJump(Runner):
@@ -41,7 +41,7 @@ class RunnerJump(Runner):
 
     @staticmethod
     def _init_julia():
-        # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel,no-name-in-module
         print('Init Julia Environment. This can take some time...')
         print('Julia...', end='', flush=True)
         from julia import Julia
@@ -56,7 +56,7 @@ class RunnerJump(Runner):
 
     @staticmethod
     def _run_julia(jlprog):
-        # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel,no-name-in-module
         from julia import Main, JuliaError
         try:
             Main.eval(jlprog)

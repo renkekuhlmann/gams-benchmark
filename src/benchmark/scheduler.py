@@ -8,7 +8,8 @@ import queue
 import threading
 
 from job import Job
-from trace import Trace, TraceRecord
+from trace_dict import TraceDict
+from trace_record import TraceRecord
 from result import Result
 
 class Scheduler:
@@ -22,7 +23,7 @@ class Scheduler:
         self.configurations = configurations
         self.time_start = time.time()
         self.jobs = queue.Queue()
-        self.trace = Trace()
+        self.traces = queue.Queue()
         self.output = output
 
 
@@ -68,7 +69,7 @@ class Scheduler:
         # load solution file
         optsol = None
         if solu_file is not None:
-            optsol = Trace()
+            optsol = TraceDict()
             optsol.load_solu(solu_file)
 
         # create jobs
@@ -116,9 +117,16 @@ class Scheduler:
                 threads[i].join()
 
         # write results
+        self.traces.put(None)
+        traces = TraceDict()
+        while True:
+            trace = self.traces.get()
+            if trace is None:
+                break
+            traces.append(trace)
         for conf in self.configurations:
             conf_name = self._configuration_name(conf)
-            self.trace.write(os.path.join(self.result_path, conf_name, 'trace.trc'))
+            traces.write(os.path.join(self.result_path, conf_name, 'trace.trc'))
 
 
     def _duration(self):
@@ -133,11 +141,11 @@ class Scheduler:
 
             if job.init_workdir() and self._duration() <= max_duration:
                 result = self.runner.run(job)
-                self.trace.append(result.trace)
+                self.traces.put(result.trace)
             else:
                 trace = TraceRecord(job.filename())
                 trace.load_trc(os.path.join(job.workdir, 'trace.trc'))
                 result = Result(trace, "", "")
-                self.trace.append(trace)
+                self.traces.put(trace)
 
             self.output.print(job, result, self._duration(), self.num_jobs(), thread_id)

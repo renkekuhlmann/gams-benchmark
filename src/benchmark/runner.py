@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """ Runner """
 
-from trace import TraceRecord
+from trace_record import TraceRecord
 from result import Result
 
 class Runner:

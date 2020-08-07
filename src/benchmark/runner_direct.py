@@ -7,7 +7,7 @@ import time
 import subprocess
 
 from runner import Runner
-from trace import TraceRecord
+from trace_record import TraceRecord
 from result import Result
 
 class RunnerDirect(Runner):

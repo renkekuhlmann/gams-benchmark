@@ -11,7 +11,7 @@ import pyomo.environ as pyo
 import pyomo.version as pyover
 
 from runner import Runner
-from trace import TraceRecord
+from trace_record import TraceRecord
 from result import Result
 
 class RunnerPyomo(Runner):
