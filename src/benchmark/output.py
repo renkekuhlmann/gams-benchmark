@@ -149,7 +149,7 @@ class Output:
         # pylint: disable=too-many-branches,too-many-statements
 
         msg = ''
-        if result.solver_status() != 1:
+        if result.solver_status() != 1 or result.model_status() not in [1,2,8,15,16,17]:
             msg += '{:10s} {:10s} {:10s} {:10s} {:7s}'.format('', '', '', '', 'na')
             return msg
 

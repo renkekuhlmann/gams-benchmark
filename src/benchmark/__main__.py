@@ -87,7 +87,7 @@ def _arguments():
     parser.add_argument('--output',
                         type=str,
                         default='jobs|name|config|model|status|objective|time',
-                        help='Output columns separated by "|"'
+                        help='Output columns separated by "|" '
                              '(default: jobs|name|config|model|status|objective|time)')
     args = parser.parse_args()
 
